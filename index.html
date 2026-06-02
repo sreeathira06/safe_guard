@@ -406,15 +406,29 @@ function shareSMS() {
 }
 
 /* =========================================================
-   CONTACTS  (in-memory storage, no localStorage)
+   CONTACTS  (localStorage persistence)
    ========================================================= */
 let contacts = [];
 
 function getContacts() { return contacts; }
 
 function saveContacts() {
-  // stored in memory only
+  // Save to localStorage so contacts persist after page reload
+  localStorage.setItem('emergencyContacts', JSON.stringify(contacts));
   renderContacts();
+}
+
+function loadContacts() {
+  // Load contacts from localStorage on page load
+  const saved = localStorage.getItem('emergencyContacts');
+  if (saved) {
+    try {
+      contacts = JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load contacts from localStorage:', e);
+      contacts = [];
+    }
+  }
 }
 
 function addContact() {
@@ -473,6 +487,7 @@ function escHtml(s) {
 /* =========================================================
    INIT
    ========================================================= */
+loadContacts();
 renderContacts();
 </script>
 </body>
