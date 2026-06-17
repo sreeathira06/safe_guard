@@ -320,6 +320,8 @@
 
   footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 10px; }
 </style>
+<link rel="manifest" href="manifest.json">
+
 </head>
 <body>
 
@@ -667,14 +669,15 @@ async function sendDistressSignal() {
 
   await fetchLiveLocation();
 
-  const msg = encodeURIComponent(buildDistressMsg());
   const contacts = getContacts();
   const phone = contacts.length ? contacts[0].phone.replace(/\D/g, '') : '';
 
   if (phone) {
-    window.location.href = `sms:${phone}?body=${msg}`;
+    document.getElementById('sosMsg').textContent = '📞 Calling your first emergency contact...';
+    window.location.href = `tel:${phone}`;
   } else {
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    document.getElementById('sosMsg').textContent = '📞 No emergency contact found. Calling 112...';
+    window.location.href = 'tel:112';
   }
 }
 
@@ -1175,4 +1178,13 @@ initNetworkStatus();
 initMotionDetection();
 </script>
 </body>
+
+<script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.error(err));
+        }
+    </script>
+
 </html>
