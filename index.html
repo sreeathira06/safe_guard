@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SafeGuard – Personal Safety</title>
 <style>
-  /* ── RESET & BASE ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --red:    #d32f2f;
@@ -15,6 +14,8 @@
     --text:   #1a1a1a;
     --muted:  #666;
     --white:  #fff;
+    --green:  #2e7d32;
+    --amber:  #f57c00;
     --radius: 12px;
     --shadow: 0 4px 20px rgba(0,0,0,.12);
   }
@@ -26,21 +27,38 @@
     padding-bottom: 40px;
   }
 
-  /* ── HEADER ── */
   header {
     background: var(--red);
     color: var(--white);
     padding: 18px 20px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    position: relative;
   }
   header h1 { font-size: 1.5rem; letter-spacing: 1px; }
   header p  { font-size: .82rem; opacity: .85; margin-top: 2px; }
 
-  /* ── LAYOUT ── */
+  /* status strip */
+  #statusStrip {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    font-size: .72rem;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .status-pill {
+    background: rgba(255,255,255,.18);
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .status-pill.warn { background: var(--amber); color: #fff; font-weight: 700; }
+
   .container { max-width: 520px; margin: 0 auto; padding: 20px 16px; }
 
-  /* ── CARD ── */
   .card {
     background: var(--white);
     border-radius: var(--radius);
@@ -56,8 +74,8 @@
     align-items: center;
     gap: 8px;
   }
+  .card .sub { font-size: .78rem; color: var(--muted); margin-bottom: 12px; margin-top: -8px; }
 
-  /* ── SOS BUTTON ── */
   .sos-wrap { text-align: center; padding: 10px 0 6px; }
   #sosBtn {
     width: 150px; height: 150px;
@@ -74,10 +92,7 @@
     animation: pulse 2s infinite;
   }
   #sosBtn:active { transform: scale(.93); }
-  #sosBtn.active {
-    background: var(--red-dk);
-    animation: pulseActive 1s infinite;
-  }
+  #sosBtn.active { background: var(--red-dk); animation: pulseActive 1s infinite; }
   @keyframes pulse {
     0%,100% { box-shadow: 0 0 0 0 rgba(211,47,47,.4); }
     50%      { box-shadow: 0 0 0 18px rgba(211,47,47,0); }
@@ -86,16 +101,17 @@
     0%,100% { box-shadow: 0 0 0 0 rgba(183,28,28,.7); }
     50%      { box-shadow: 0 0 0 24px rgba(183,28,28,0); }
   }
-  #sosMsg {
-    margin-top: 14px;
-    font-weight: 700;
-    color: var(--red);
-    font-size: 1rem;
-    min-height: 24px;
-    transition: opacity .3s;
+  #sosMsg { margin-top: 14px; font-weight: 700; color: var(--red); font-size: 1rem; min-height: 24px; }
+
+  /* countdown ring */
+  #countdownWrap { display:none; text-align:center; margin-top: 14px; }
+  #countdownNum {
+    font-size: 2.4rem; font-weight: 900; color: var(--red-dk);
+  }
+  #cancelCountdownBtn {
+    margin-top: 6px;
   }
 
-  /* ── ALERT BANNER ── */
   #alertBanner {
     display: none;
     background: var(--red);
@@ -107,10 +123,25 @@
     border-radius: var(--radius);
     margin-bottom: 18px;
     animation: blink 1s step-start infinite;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
   }
   @keyframes blink { 50% { opacity: .6; } }
+  #alertBannerText { flex: 1 1 220px; }
+  #cancelDistressBtn {
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.6);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: .82rem;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  #cancelDistressBtn:hover { background: rgba(255,255,255,.22); }
 
-  /* ── LOCATION ── */
   #locText { font-size: .9rem; color: var(--muted); margin-bottom: 12px; min-height: 20px; }
   #coordsBox {
     background: var(--red-lt);
@@ -123,8 +154,14 @@
     word-break: break-all;
   }
   #coordsBox strong { color: var(--red); }
+  #cachedNote {
+    font-size: .78rem;
+    color: var(--amber);
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: none;
+  }
 
-  /* ── BUTTONS ── */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -139,69 +176,148 @@
   }
   .btn:active { transform: scale(.96); }
   .btn-red    { background: var(--red); color: var(--white); }
-  .btn-green  { background: #2e7d32; color: var(--white); }
-  .btn-blue   { background:#1565c0; color: var(--white); }
-  .btn-yellow { background: #ffc107; color: var(--white); }
-  .btn-outline {
-    background: transparent;
-    border: 2px solid var(--red);
-    color: var(--red);
-  }
+  .btn-green  { background: var(--green); color: var(--white); }
+  .btn-blue   { background: #1565c0; color: var(--white); }
+  .btn-amber  { background: var(--amber); color: var(--white); }
+  .btn-outline { background: transparent; border: 2px solid var(--red); color: var(--red); }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
 
-  /* ── CONTACTS ── */
   .contact-form { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .contact-form input {
-    flex: 1;
-    min-width: 120px;
-    padding: 9px 12px;
-    border: 1.5px solid #ddd;
-    border-radius: 8px;
-    font-size: .88rem;
-    outline: none;
+    flex: 1; min-width: 120px; padding: 9px 12px;
+    border: 1.5px solid #ddd; border-radius: 8px; font-size: .88rem; outline: none;
     transition: border-color .2s;
   }
   .contact-form input:focus { border-color: var(--red); }
   #contactList { list-style: none; }
   #contactList li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--red-lt);
-    margin-bottom: 8px;
-    font-size: .88rem;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-radius: 8px; background: var(--red-lt);
+    margin-bottom: 8px; font-size: .88rem;
   }
   #contactList li .info strong { display: block; color: var(--text); }
   #contactList li .info span   { color: var(--muted); font-size: .82rem; }
   .del-btn {
-    background: none;
-    border: none;
-    color: var(--red);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: background .2s;
+    background: none; border: none; color: var(--red); font-size: 1.2rem;
+    cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background .2s;
   }
   .del-btn:hover { background: #ffcdd2; }
   .call-btn {
-    background: none;
-    border: none;
-    color: #2e7d32;
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: background .2s;
+    background: none; border: none; color: var(--green); font-size: 1.2rem;
+    cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background .2s;
   }
   .call-btn:hover { background: #c8e6c9; }
   .actions { display: flex; gap: 4px; }
   #noContacts { color: var(--muted); font-size: .88rem; text-align: center; padding: 10px 0; }
 
-  /* ── FOOTER ── */
+  /* safe places */
+  .place-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* recorder */
+  #recStatus { font-size: .85rem; color: var(--muted); margin-bottom: 10px; min-height: 18px; }
+  #recPreview { width: 100%; border-radius: 8px; margin-top: 10px; display: none; background:#000; }
+  #recHistory { margin-top: 14px; display: grid; gap: 12px; }
+  .rec-item {
+    background: var(--red-lt);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #f8cdd1;
+  }
+  .rec-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: .82rem;
+    color: var(--muted);
+  }
+  .rec-item-type {
+    font-weight: 700;
+    color: var(--red);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .rec-item-media {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+    background: #000;
+  }
+  .rec-item-media audio { width: 100%; }
+  .rec-item-actions {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #recDot {
+    display: none;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--red);
+    animation: blink .8s step-start infinite; margin-right: 6px;
+  }
+  .rec-row { display: flex; align-items: center; }
+
+  /* PIN modal */
+  #pinOverlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    align-items: center; justify-content: center;
+    z-index: 999;
+    padding: 20px;
+  }
+  #pinModal {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  #pinModal h3 { color: var(--red); margin-bottom: 6px; }
+  #pinModal p { font-size: .82rem; color: var(--muted); margin-bottom: 14px; }
+  #pinInput {
+    width: 100%; padding: 12px; font-size: 1.3rem; text-align: center;
+    letter-spacing: 6px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 12px;
+  }
+  #pinInput:focus { border-color: var(--red); outline: none; }
+  #pinError { color: var(--red); font-size: .8rem; min-height: 16px; margin-bottom: 8px; }
+  .pin-btn-row { display: flex; gap: 10px; }
+  .pin-btn-row .btn { flex: 1; justify-content: center; }
+
+  #fallOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.62);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  #fallModal {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px 22px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  #fallModal h3 { color: var(--red); margin-bottom: 8px; }
+  #fallModal p { font-size: .9rem; color: var(--muted); margin-bottom: 14px; }
+  #fallCountdown {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--red-dk);
+    margin-bottom: 10px;
+  }
+  .fall-btn-row { display: flex; gap: 10px; }
+  .fall-btn-row .btn { flex: 1; justify-content: center; }
+
   footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 10px; }
 </style>
 </head>
@@ -210,25 +326,38 @@
 <header>
   <h1>🛡️ SafeGuard</h1>
   <p>Personal Safety App – Stay Safe, Stay Connected</p>
+  <div id="statusStrip">
+    <span class="status-pill" id="batteryPill">🔋 --</span>
+    <span class="status-pill" id="networkPill">📶 --</span>
+  </div>
 </header>
 
 <div class="container">
 
-  <!-- ALERT BANNER -->
-  <div id="alertBanner">🚨 EMERGENCY SOS ACTIVATED! HELP NEEDED! 🚨</div>
+  <div id="alertBanner">
+    <span id="alertBannerText">🚨 EMERGENCY SOS ACTIVATED! HELP NEEDED! 🚨</span>
+    <button id="cancelDistressBtn" onclick="requestDistressCancel()" style="display:none;">Cancel distress</button>
+  </div>
 
   <!-- SOS -->
   <div class="card">
     <h2>🆘 Emergency SOS</h2>
+    <p class="sub">Tap to start a 5-second countdown before alerting contacts.</p>
     <div class="sos-wrap">
-      <button id="sosBtn" onclick="toggleSOS()">SOS</button>
+      <button id="sosBtn" onclick="handleSosPress()">SOS</button>
       <p id="sosMsg"></p>
+
+      <div id="countdownWrap">
+        <div id="countdownNum">5</div>
+        <button class="btn btn-outline" id="cancelCountdownBtn" onclick="cancelCountdown()">✋ Cancel</button>
+      </div>
     </div>
   </div>
 
   <!-- LOCATION -->
   <div class="card">
     <h2>📍 My Location</h2>
+    <p id="cachedNote">⚠️ Showing last known location (offline / no fresh GPS signal)</p>
     <p id="locText">Press the button to get your current location.</p>
     <div id="coordsBox"></div>
     <div class="btn-row">
@@ -236,6 +365,32 @@
       <button class="btn btn-green" id="waBtn" onclick="shareWhatsApp()" disabled>💬 WhatsApp</button>
       <button class="btn btn-blue"  id="smsBtn" onclick="shareSMS()" disabled>📱 SMS</button>
     </div>
+  </div>
+
+  <!-- SAFE PLACES -->
+  <div class="card">
+    <h2>🏥 Nearby Safe Places</h2>
+    <p class="sub">Find the closest help based on your current location.</p>
+    <div class="place-btns">
+      <button class="btn btn-blue" onclick="findNearby('police station')">👮 Police Station</button>
+      <button class="btn btn-green" onclick="findNearby('hospital')">🏥 Hospital</button>
+      <button class="btn btn-amber" onclick="findNearby('pharmacy')">💊 Pharmacy</button>
+    </div>
+  </div>
+
+  <!-- EVIDENCE RECORDER -->
+  <div class="card">
+    <h2>🎙️ Evidence Recorder</h2>
+    <p class="sub">Capture audio or video proof during an emergency.</p>
+    <div class="rec-row"><span id="recDot"></span><p id="recStatus">Not recording.</p></div>
+    <div class="btn-row">
+      <button class="btn btn-red" id="recAudioBtn" onclick="toggleAudioRecording()">🎤 Record Audio</button>
+      <button class="btn btn-red" id="recVideoBtn" onclick="toggleVideoRecording()">🎥 Record Video</button>
+      <button class="btn btn-outline" id="recStopBtn" onclick="stopRecording()" disabled>⏹ Stop</button>
+    </div>
+    <video id="recPreview" controls></video>
+    <div id="recDownloadWrap"></div>
+    <div id="recHistory"></div>
   </div>
 
   <!-- CONTACTS -->
@@ -250,61 +405,348 @@
     <p id="noContacts">No contacts added yet.</p>
   </div>
 
+  <!-- PIN SETTINGS -->
+  <div class="card">
+    <h2>🔐 PIN Settings</h2>
+    <p class="sub">Set your own PIN for cancelling distress alerts and deleting recordings.</p>
+    <div class="contact-form">
+      <input id="currentPinInput" type="password" placeholder="Current PIN" maxlength="6" inputmode="numeric"/>
+      <input id="setPinInput" type="password" placeholder="New PIN (4-6 digits)" maxlength="6" inputmode="numeric"/>
+      <button class="btn btn-red" onclick="setMyPin()">Save PIN</button>
+    </div>
+    <p id="pinStatus" style="font-size:.82rem;color:var(--muted);min-height:18px;">Enter the current PIN first to change it.</p>
+  </div>
+
 </div>
 
 <footer>SafeGuard &copy; 2025 &nbsp;|&nbsp; Your safety, our priority</footer>
+
+<!-- PIN MODAL (for cancelling an active SOS) -->
+<div id="pinOverlay">
+  <div id="pinModal">
+    <h3>🔒 Enter PIN to Cancel</h3>
+    <p>For your safety, cancelling an active SOS requires your PIN.</p>
+      <p id="pinMessage"></p>
+    <input type="password" id="pinInput" maxlength="6" inputmode="numeric" placeholder="••••"/>
+    <p id="pinError"></p>
+    <div class="pin-btn-row">
+      <button class="btn btn-outline" onclick="closePinModal()">Back</button>
+      <button class="btn btn-red" onclick="verifyPin()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- FALL / SHAKE ALERT -->
+<div id="fallOverlay">
+  <div id="fallModal">
+    <h3>⚠️ Are you alright?</h3>
+    <p>Sudden movement was detected. If you do not respond in 10 seconds, distress will be sent with your live location.</p>
+    <div id="fallCountdown">10</div>
+    <div class="fall-btn-row">
+      <button class="btn btn-green" onclick="dismissFallAlert(true)">I'm alright</button>
+      <button class="btn btn-red" onclick="sendDistressSignal()">Send Help Now</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =========================================================
    STATE
    ========================================================= */
 let sosActive = false;
-let userCoords = null; // { lat, lng }
-let sosInterval = null;
+let userCoords = null;       // { lat, lng }
+let cachedCoords = null;     // last known good location
+let countdownTimer = null;
+let countdownVal = 5;
 let alarmAudioCtx = null;
 let alarmOscillator = null;
 let alarmGain = null;
 let alarmTimer = null;
+let fallDetectionEnabled = false;
+let fallAlertActive = false;
+let distressActive = false;
+let fallResponseTimer = null;
+let fallCountdown = 10;
+let motionHistory = [];
+let motionCooldownUntil = 0;
+let motionPermissionPrompted = false;
+let pinPendingAction = null;
+const DEFAULT_SOS_PIN = '1234';
+let SOS_PIN = localStorage.getItem('safeGuardPin') || DEFAULT_SOS_PIN;
 
 /* =========================================================
-   SOS
+   #4  BATTERY & NETWORK STATUS AWARENESS
    ========================================================= */
-function toggleSOS() {
-  const btn    = document.getElementById('sosBtn');
-  const msg    = document.getElementById('sosMsg');
-  const banner = document.getElementById('alertBanner');
+function initBatteryStatus() {
+  const pill = document.getElementById('batteryPill');
+  if (!('getBattery' in navigator)) { pill.textContent = '🔋 N/A'; return; }
+  navigator.getBattery().then(battery => {
+    const update = () => {
+      const pct = Math.round(battery.level * 100);
+      pill.textContent = `🔋 ${pct}%`;
+      pill.classList.toggle('warn', pct <= 20 && !battery.charging);
+      if (pct <= 20 && !battery.charging) {
+        pill.textContent = `🔋 ${pct}% LOW!`;
+      }
+    };
+    update();
+    battery.addEventListener('levelchange', update);
+    battery.addEventListener('chargingchange', update);
+  });
+}
 
-  sosActive = !sosActive;
-
-  if (sosActive) {
-    btn.classList.add('active');
-    msg.textContent = '⚠️ SOS Active – Tap again to cancel';
-    banner.style.display = 'block';
-    // Vibrate pattern if supported
-    if (navigator.vibrate) navigator.vibrate([500,200,500,200,500]);
-    // Auto-trigger location fetch
-    getLocation();
-    // Start emergency alarm tone
-    startAlarm();
-    const call112 = confirm('SOS is active. Call emergency services on 112 now?');
-    if (call112) {
-      window.location.href = 'tel:112';
+function initNetworkStatus() {
+  const pill = document.getElementById('networkPill');
+  const update = () => {
+    if (navigator.onLine) {
+      pill.textContent = '📶 Online';
+      pill.classList.remove('warn');
+    } else {
+      pill.textContent = '📡 Offline';
+      pill.classList.add('warn');
     }
-  } else {
-    btn.classList.remove('active');
-    msg.textContent = '✅ SOS Cancelled';
-    banner.style.display = 'none';
-    if (navigator.vibrate) navigator.vibrate(0);
-    stopAlarm();
-    setTimeout(() => { msg.textContent = ''; }, 3000);
+  };
+  update();
+  window.addEventListener('online', update);
+  window.addEventListener('offline', update);
+}
+
+/* =========================================================
+   FALL / SHAKE DETECTION
+   ========================================================= */
+function initMotionDetection() {
+  if (!('DeviceMotionEvent' in window)) {
+    return;
+  }
+
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    const promptPermission = () => {
+      if (motionPermissionPrompted) return;
+      motionPermissionPrompted = true;
+      DeviceMotionEvent.requestPermission().catch(() => {});
+    };
+    window.addEventListener('pointerdown', promptPermission, { once: true });
+  }
+
+  window.addEventListener('devicemotion', handleMotionEvent, { passive: true });
+  fallDetectionEnabled = true;
+}
+
+function handleMotionEvent(event) {
+  if (!fallDetectionEnabled || fallAlertActive || Date.now() < motionCooldownUntil) {
+    return;
+  }
+
+  const motion = event.accelerationIncludingGravity || event.acceleration;
+  if (!motion) return;
+
+  const x = motion.x || 0;
+  const y = motion.y || 0;
+  const z = motion.z || 0;
+  const magnitude = Math.sqrt((x * x) + (y * y) + (z * z));
+
+  motionHistory.push({ magnitude, time: Date.now() });
+  motionHistory = motionHistory.filter(sample => Date.now() - sample.time <= 2000);
+
+  const strongSpike = magnitude >= 24;
+  const rapidShake = motionHistory.filter(sample => sample.magnitude >= 16).length >= 3;
+
+  if (strongSpike || rapidShake) {
+    triggerFallAlert();
   }
 }
 
-function startAlarm() {
-  if (!window.AudioContext && !window.webkitAudioContext) return;
-  if (alarmAudioCtx) return;
+function triggerFallAlert() {
+  if (fallAlertActive) return;
 
+  fallAlertActive = true;
+  fallCountdown = 10;
+  motionCooldownUntil = Date.now() + 15000;
+  motionHistory = [];
+
+  document.getElementById('fallOverlay').style.display = 'flex';
+  document.getElementById('fallCountdown').textContent = fallCountdown;
+  document.getElementById('sosMsg').textContent = '⚠️ Sudden movement detected. Respond now.';
+  if (navigator.vibrate) navigator.vibrate([300, 120, 300, 120, 600]);
+
+  clearInterval(fallResponseTimer);
+  fallResponseTimer = setInterval(() => {
+    fallCountdown--;
+    document.getElementById('fallCountdown').textContent = fallCountdown;
+    if (fallCountdown <= 0) {
+      clearInterval(fallResponseTimer);
+      sendDistressSignal();
+    }
+  }, 1000);
+}
+
+function dismissFallAlert(manual = false) {
+  clearInterval(fallResponseTimer);
+  fallResponseTimer = null;
+  fallAlertActive = false;
+  document.getElementById('fallOverlay').style.display = 'none';
+  document.getElementById('sosMsg').textContent = manual ? '✅ Alert cleared.' : '';
+  setTimeout(() => {
+    if (!fallAlertActive) {
+      document.getElementById('sosMsg').textContent = '';
+    }
+  }, 2500);
+}
+
+function requestDistressCancel() {
+  if (!fallAlertActive && !distressActive) {
+    return;
+  }
+
+  openPinModal('cancel the distress signal', () => {
+    clearDistressState();
+    dismissFallAlert(true);
+    document.getElementById('sosMsg').textContent = '✅ Distress signal cancelled (PIN verified).';
+    setTimeout(() => { document.getElementById('sosMsg').textContent = ''; }, 3000);
+  });
+}
+
+function clearDistressState() {
+  distressActive = false;
+  document.getElementById('alertBanner').style.display = 'none';
+  document.getElementById('cancelDistressBtn').style.display = 'none';
+  stopAlarm();
+}
+
+async function fetchLiveLocation() {
+  if (!navigator.geolocation) return null;
+
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        userCoords = { lat, lng };
+        cachedCoords = { lat, lng, time: new Date() };
+        const box = document.getElementById('coordsBox');
+        const txt = document.getElementById('locText');
+        const waBtn = document.getElementById('waBtn');
+        const smsBtn = document.getElementById('smsBtn');
+        const cachedNote = document.getElementById('cachedNote');
+
+        cachedNote.style.display = 'none';
+        txt.textContent = '✅ Live location updated for distress.';
+        box.style.display = 'block';
+        box.innerHTML = `
+          <strong>Latitude:</strong>  ${lat.toFixed(6)}<br>
+          <strong>Longitude:</strong> ${lng.toFixed(6)}<br>
+          <strong>Accuracy:</strong>  ±${Math.round(accuracy)} m<br>
+          <strong>Maps:</strong> <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="color:var(--red)">Open in Google Maps ↗</a>
+        `;
+        waBtn.disabled = false;
+        smsBtn.disabled = false;
+        resolve(userCoords);
+      },
+      () => resolve(userCoords),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+
+function buildDistressMsg() {
+  if (!userCoords) return 'Distress alert triggered. Location unavailable.';
+  const { lat, lng } = userCoords;
+  return `🆘 DISTRESS ALERT: I may need help. Live location: https://maps.google.com/?q=${lat},${lng}`;
+}
+
+async function sendDistressSignal() {
+  distressActive = true;
+
+  clearInterval(fallResponseTimer);
+  fallResponseTimer = null;
+  document.getElementById('fallOverlay').style.display = 'none';
+  document.getElementById('alertBanner').style.display = 'flex';
+  document.getElementById('alertBannerText').textContent = '🚨 DISTRESS SIGNAL SENT! HELP NEEDED! 🚨';
+  document.getElementById('cancelDistressBtn').style.display = 'inline-flex';
+  document.getElementById('sosMsg').textContent = '🚨 Distress signal sent.';
+  if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+
+  await fetchLiveLocation();
+
+  const msg = encodeURIComponent(buildDistressMsg());
+  const contacts = getContacts();
+  const phone = contacts.length ? contacts[0].phone.replace(/\D/g, '') : '';
+
+  if (phone) {
+    window.location.href = `sms:${phone}?body=${msg}`;
+  } else {
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  }
+}
+
+/* =========================================================
+   SOS  +  #2 PIN-PROTECTED CANCEL  +  COUNTDOWN
+   ========================================================= */
+function handleSosPress() {
+  if (!sosActive) {
+    startCountdown();
+  } else {
+    // already active -> require PIN to cancel
+    openPinModal();
+  }
+}
+
+function startCountdown() {
+  sosActive = true;
+  countdownVal = 5;
+  document.getElementById('sosBtn').classList.add('active');
+  document.getElementById('countdownWrap').style.display = 'block';
+  document.getElementById('countdownNum').textContent = countdownVal;
+  document.getElementById('sosMsg').textContent = '⏳ Sending alert in 5 seconds…';
+
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById('countdownNum').textContent = countdownVal;
+    if (countdownVal <= 0) {
+      clearInterval(countdownTimer);
+      triggerSOS();
+    }
+  }, 1000);
+}
+
+function cancelCountdown() {
+  // cancelling DURING countdown does not need PIN (not yet "active/sent")
+  clearInterval(countdownTimer);
+  stopAlarm();
+  resetSosUI();
+  document.getElementById('sosMsg').textContent = '✅ SOS Cancelled before sending.';
+  setTimeout(() => { document.getElementById('sosMsg').textContent = ''; }, 3000);
+}
+
+function triggerSOS() {
+  document.getElementById('countdownWrap').style.display = 'none';
+  document.getElementById('alertBanner').style.display = 'block';
+  document.getElementById('sosMsg').textContent = '⚠️ SOS ACTIVE — Tap to cancel (PIN required)';
+  if (navigator.vibrate) navigator.vibrate([500,200,500,200,500]);
+  startAlarm();
+  getLocation(); // auto-fetch fresh location
+
+  const callEmergency = confirm('SOS is active. Call emergency services on 112 now?');
+  if (callEmergency) {
+    window.location.href = 'tel:112';
+  }
+}
+
+function resetSosUI() {
+  sosActive = false;
+  stopAlarm();
+  document.getElementById('sosBtn').classList.remove('active');
+  document.getElementById('alertBanner').style.display = 'none';
+  document.getElementById('alertBannerText').textContent = '🚨 EMERGENCY SOS ACTIVATED! HELP NEEDED! 🚨';
+  document.getElementById('cancelDistressBtn').style.display = 'none';
+  document.getElementById('countdownWrap').style.display = 'none';
+  dismissFallAlert(false);
+}
+
+function startAlarm() {
+  if (alarmAudioCtx) return;
   const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
   alarmAudioCtx = new AudioContext();
   alarmOscillator = alarmAudioCtx.createOscillator();
   alarmGain = alarmAudioCtx.createGain();
@@ -321,43 +763,89 @@ function startAlarm() {
     alarmAudioCtx.resume();
   }
 
-  let on = false;
+  let highTone = false;
   alarmTimer = setInterval(() => {
-    on = !on;
-    alarmGain.gain.setTargetAtTime(on ? 0.25 : 0, alarmAudioCtx.currentTime, 0.02);
-    alarmOscillator.frequency.setTargetAtTime(on ? 880 : 660, alarmAudioCtx.currentTime, 0.02);
+    highTone = !highTone;
+    alarmGain.gain.setTargetAtTime(highTone ? 0.25 : 0, alarmAudioCtx.currentTime, 0.02);
+    alarmOscillator.frequency.setTargetAtTime(highTone ? 880 : 660, alarmAudioCtx.currentTime, 0.02);
   }, 500);
 }
 
 function stopAlarm() {
   if (!alarmAudioCtx) return;
+
   clearInterval(alarmTimer);
   alarmTimer = null;
-  alarmOscillator.stop();
+
+  try {
+    alarmOscillator.stop();
+  } catch (e) {
+    // ignore if already stopped
+  }
+
   alarmOscillator.disconnect();
   alarmGain.disconnect();
   alarmAudioCtx.close();
-  alarmAudioCtx = alarmOscillator = alarmGain = null;
+  alarmAudioCtx = null;
+  alarmOscillator = null;
+  alarmGain = null;
+}
+
+function openPinModal(actionDescription = 'continue', onSuccess = null) {
+  pinPendingAction = onSuccess;
+  document.getElementById('pinOverlay').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('pinMessage').textContent = `Enter PIN to ${actionDescription}.`;
+  document.getElementById('pinInput').focus();
+}
+function closePinModal() {
+  document.getElementById('pinOverlay').style.display = 'none';
+  document.getElementById('pinMessage').textContent = '';
+  pinPendingAction = null;
+}
+function verifyPin() {
+  const entered = document.getElementById('pinInput').value.trim();
+  if (entered === SOS_PIN) {
+    closePinModal();
+    if (typeof pinPendingAction === 'function') {
+      const action = pinPendingAction;
+      pinPendingAction = null;
+      action();
+      return;
+    }
+    resetSosUI();
+    document.getElementById('sosMsg').textContent = '✅ SOS Cancelled (PIN verified).';
+    setTimeout(() => { document.getElementById('sosMsg').textContent = ''; }, 3000);
+  } else {
+    document.getElementById('pinError').textContent = '❌ Incorrect PIN. Try again.';
+  }
 }
 
 /* =========================================================
-   GEOLOCATION
+   GEOLOCATION  +  #6 OFFLINE FALLBACK (CACHED LOCATION)
    ========================================================= */
 function getLocation() {
   const txt   = document.getElementById('locText');
   const box   = document.getElementById('coordsBox');
   const waBtn = document.getElementById('waBtn');
   const smsBtn= document.getElementById('smsBtn');
+  const cachedNote = document.getElementById('cachedNote');
 
   if (!navigator.geolocation) {
-    txt.textContent = '❌ Geolocation is not supported by this browser.';
+    showCachedIfAvailable();
+    txt.textContent = '❌ Geolocation not supported by this browser.';
     return;
   }
+
   txt.textContent = '🔄 Fetching your location…';
+  cachedNote.style.display = 'none';
+
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude: lat, longitude: lng, accuracy } = pos.coords;
       userCoords = { lat, lng };
+      cachedCoords = { lat, lng, time: new Date() }; // update cache on success
       txt.textContent = '✅ Location fetched successfully!';
       box.style.display = 'block';
       box.innerHTML = `
@@ -370,15 +858,41 @@ function getLocation() {
       smsBtn.disabled = false;
     },
     err => {
+      // GPS failed (no signal / permission denied / timeout) -> fall back to cache
       const msgs = {
-        1: 'Permission denied. Please allow location access.',
-        2: 'Position unavailable. Try again.',
-        3: 'Request timed out. Try again.',
+        1: 'Permission denied.',
+        2: 'Position unavailable.',
+        3: 'Request timed out.',
       };
-      txt.textContent = '❌ ' + (msgs[err.code] || 'Unknown error.');
+      txt.textContent = '❌ ' + (msgs[err.code] || 'Unknown error.') + ' Trying cached location…';
+      showCachedIfAvailable();
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+function showCachedIfAvailable() {
+  const box   = document.getElementById('coordsBox');
+  const txt   = document.getElementById('locText');
+  const waBtn = document.getElementById('waBtn');
+  const smsBtn= document.getElementById('smsBtn');
+  const cachedNote = document.getElementById('cachedNote');
+
+  if (cachedCoords) {
+    userCoords = { lat: cachedCoords.lat, lng: cachedCoords.lng };
+    cachedNote.style.display = 'block';
+    txt.textContent = `📦 Using last known location (from ${cachedCoords.time.toLocaleTimeString()})`;
+    box.style.display = 'block';
+    box.innerHTML = `
+      <strong>Latitude:</strong>  ${cachedCoords.lat.toFixed(6)}<br>
+      <strong>Longitude:</strong> ${cachedCoords.lng.toFixed(6)}<br>
+      <strong>Maps:</strong> <a href="https://maps.google.com/?q=${cachedCoords.lat},${cachedCoords.lng}" target="_blank" style="color:var(--red)">Open in Google Maps ↗</a>
+    `;
+    waBtn.disabled  = false;
+    smsBtn.disabled = false;
+  } else {
+    txt.textContent = '❌ No location available (live or cached).';
+  }
 }
 
 function buildLocationMsg() {
@@ -389,12 +903,9 @@ function buildLocationMsg() {
 
 function shareWhatsApp() {
   const msg = encodeURIComponent(buildLocationMsg());
-  // Try first contact's phone, else open generic WhatsApp
   const contacts = getContacts();
   const phone = contacts.length ? contacts[0].phone.replace(/\D/g,'') : '';
-  const url = phone
-    ? `https://wa.me/${phone}?text=${msg}`
-    : `https://wa.me/?text=${msg}`;
+  const url = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
   window.open(url, '_blank');
 }
 
@@ -406,20 +917,197 @@ function shareSMS() {
 }
 
 /* =========================================================
+   #3  NEARBY SAFE PLACES FINDER
+   ========================================================= */
+function findNearby(type) {
+  if (!userCoords) {
+    alert('Please fetch your location first using "Get Location".');
+    return;
+  }
+  const { lat, lng } = userCoords;
+  const query = encodeURIComponent(type);
+  const url = `https://www.google.com/maps/search/${query}/@${lat},${lng},15z`;
+  window.open(url, '_blank');
+}
+
+/* =========================================================
+   #7  EVIDENCE RECORDER (AUDIO + VIDEO)
+   ========================================================= */
+let mediaRecorder = null;
+let recordedChunks = [];
+let activeStream = null;
+let recordingType = null; // 'audio' | 'video'
+let recordings = [];
+
+async function toggleAudioRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    startRecording(stream, 'audio');
+  } catch (err) {
+    document.getElementById('recStatus').textContent = '❌ Microphone access denied.';
+  }
+}
+
+async function toggleVideoRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    startRecording(stream, 'video');
+  } catch (err) {
+    document.getElementById('recStatus').textContent = '❌ Camera/mic access denied.';
+  }
+}
+
+function startRecording(stream, type) {
+  activeStream = stream;
+  recordingType = type;
+  recordedChunks = [];
+
+  if (type === 'video') {
+    const preview = document.getElementById('recPreview');
+    preview.srcObject = stream;
+    preview.style.display = 'block';
+    preview.muted = true;
+    preview.play();
+  }
+
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = handleRecordingStop;
+  mediaRecorder.start();
+
+  document.getElementById('recDot').style.display = 'inline-block';
+  document.getElementById('recStatus').textContent = `🔴 Recording ${type}…`;
+  document.getElementById('recAudioBtn').disabled = true;
+  document.getElementById('recVideoBtn').disabled = true;
+  document.getElementById('recStopBtn').disabled = false;
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+  }
+  document.getElementById('recDot').style.display = 'none';
+  document.getElementById('recAudioBtn').disabled = false;
+  document.getElementById('recVideoBtn').disabled = false;
+  document.getElementById('recStopBtn').disabled = true;
+}
+
+function handleRecordingStop() {
+  const mime = recordingType === 'video' ? 'video/webm' : 'audio/webm';
+  const blob = new Blob(recordedChunks, { type: mime });
+  const url = URL.createObjectURL(blob);
+  const entry = {
+    id: Date.now(),
+    type: recordingType,
+    url,
+    time: new Date(),
+  };
+
+  recordings.unshift(entry);
+
+  document.getElementById('recStatus').textContent = `✅ ${recordingType} recording ready.`;
+
+  if (recordingType === 'video') {
+    const preview = document.getElementById('recPreview');
+    preview.srcObject = null;
+    preview.src = url;
+    preview.muted = false;
+    preview.style.display = 'block';
+  }
+
+  const wrap = document.getElementById('recDownloadWrap');
+  const ext = 'webm';
+  wrap.innerHTML = `<a class="btn btn-green" href="${url}" download="evidence_${recordingType}_${Date.now()}.${ext}" style="margin-top:10px; text-decoration:none; display:inline-flex;">⬇️ Download latest ${recordingType}</a>`;
+
+  renderRecordings();
+}
+
+function renderRecordings() {
+  const history = document.getElementById('recHistory');
+
+  if (!recordings.length) {
+    history.innerHTML = '';
+    return;
+  }
+
+  history.innerHTML = recordings.map(rec => {
+    const label = rec.type === 'video' ? 'Video recording' : 'Audio recording';
+    const media = rec.type === 'video'
+      ? `<video class="rec-item-media" controls src="${rec.url}"></video>`
+      : `<audio class="rec-item-media" controls src="${rec.url}"></audio>`;
+
+    return `
+      <div class="rec-item">
+        <div class="rec-item-header">
+          <span class="rec-item-type">${label}</span>
+          <span>${rec.time.toLocaleString()}</span>
+        </div>
+        ${media}
+        <div class="rec-item-actions">
+          <a class="btn btn-green" href="${rec.url}" download="evidence_${rec.type}_${rec.id}.webm" style="text-decoration:none; display:inline-flex;">⬇️ Download</a>
+          <button class="btn btn-outline" onclick="requestDeleteRecording(${rec.id})">🗑️ Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function requestDeleteRecording(id) {
+  openPinModal('delete a recording', () => deleteRecording(id));
+}
+
+function deleteRecording(id) {
+  const index = recordings.findIndex(rec => rec.id === id);
+  if (index === -1) return;
+
+  URL.revokeObjectURL(recordings[index].url);
+  recordings.splice(index, 1);
+  renderRecordings();
+}
+
+/* =========================================================
    CONTACTS  (localStorage persistence)
    ========================================================= */
 let contacts = [];
-
 function getContacts() { return contacts; }
-
 function saveContacts() {
-  // Save to localStorage so contacts persist after page reload
   localStorage.setItem('emergencyContacts', JSON.stringify(contacts));
   renderContacts();
 }
 
+function setMyPin() {
+  const currentInput = document.getElementById('currentPinInput');
+  const input = document.getElementById('setPinInput');
+  const currentValue = currentInput.value.trim();
+  const value = input.value.trim();
+  const status = document.getElementById('pinStatus');
+
+  if (currentValue !== SOS_PIN) {
+    status.textContent = 'Current PIN is incorrect.';
+    status.style.color = 'var(--red)';
+    return;
+  }
+
+  if (!/^\d{4,6}$/.test(value)) {
+    status.textContent = 'Enter a PIN with 4 to 6 digits.';
+    status.style.color = 'var(--red)';
+    return;
+  }
+
+  SOS_PIN = value;
+  localStorage.setItem('safeGuardPin', value);
+  currentInput.value = '';
+  input.value = '';
+  status.textContent = 'PIN updated on this device.';
+  status.style.color = 'var(--green)';
+}
+
 function loadContacts() {
-  // Load contacts from localStorage on page load
   const saved = localStorage.getItem('emergencyContacts');
   if (saved) {
     try {
@@ -434,10 +1122,8 @@ function loadContacts() {
 function addContact() {
   const name  = document.getElementById('cName').value.trim();
   const phone = document.getElementById('cPhone').value.trim();
-
   if (!name || !phone) { alert('Please enter both name and phone number.'); return; }
   if (!/^\+?\d{7,15}$/.test(phone)) { alert('Enter a valid phone number (7–15 digits, optional + prefix).'); return; }
-
   contacts.push({ id: Date.now(), name, phone });
   saveContacts();
   document.getElementById('cName').value  = '';
@@ -460,17 +1146,12 @@ function renderContacts() {
   const list = document.getElementById('contactList');
   const none = document.getElementById('noContacts');
   list.innerHTML = '';
-
   if (!contacts.length) { none.style.display = 'block'; return; }
   none.style.display = 'none';
-
   contacts.forEach(c => {
     const li = document.createElement('li');
     li.innerHTML = `
-      <div class="info">
-        <strong>${escHtml(c.name)}</strong>
-        <span>${escHtml(c.phone)}</span>
-      </div>
+      <div class="info"><strong>${escHtml(c.name)}</strong><span>${escHtml(c.phone)}</span></div>
       <div class="actions">
         <button class="call-btn" onclick="callContact(${c.id})" title="Call">📞</button>
         <button class="del-btn" onclick="deleteContact(${c.id})" title="Remove">🗑️</button>
@@ -489,6 +1170,9 @@ function escHtml(s) {
    ========================================================= */
 loadContacts();
 renderContacts();
+initBatteryStatus();
+initNetworkStatus();
+initMotionDetection();
 </script>
 </body>
 </html>
